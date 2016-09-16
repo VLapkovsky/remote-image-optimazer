@@ -229,9 +229,3 @@ func linkParser(writer http.ResponseWriter, request *http.Request) {
 
 	writer.Write(js)
 }
-
-// Parser starts up parser of link
-// func Parser() http.Handler {
-// 	handler := http.Handler(http.HandlerFunc(linkPasrser))
-// 	return handler.ServeHTTP(w, r)
-// }
