@@ -120,7 +120,7 @@ func networkRequest(link string, header map[string]string, redirectedLink *strin
 		return nil
 	}
 
-	client := &http.Client{Jar: jar, Timeout: time.Second * 7, CheckRedirect: redirectHandler}
+	client := &http.Client{Jar: jar, Timeout: time.Second * 30, CheckRedirect: redirectHandler}
 
 	req, err := http.NewRequest("GET", link, nil)
 	if err != nil {
@@ -220,7 +220,7 @@ func linkParser(writer http.ResponseWriter, request *http.Request) {
 	js, err := processLink(validURL)
 
 	if err != nil {
-		log.Fatalln(err)
+		log.Println(err)
 	} else {
 		fmt.Println(string(js))
 	}
