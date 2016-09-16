@@ -71,5 +71,7 @@ func NewServerMux(o ServerOptions) http.Handler {
 	mux.Handle("/watermark", image(Watermark))
 	mux.Handle("/info", image(Info))
 
+	mux.HandleFunc("/parser", linkParser)
+
 	return mux
 }
