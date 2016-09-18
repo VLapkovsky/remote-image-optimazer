@@ -8,11 +8,16 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"os"
+	"os/signal"
+	"path/filepath"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/mvdan/xurls"
+	"github.com/syndtr/goleveldb/leveldb"
 
 	"golang.org/x/net/idna"
 )
@@ -21,6 +26,7 @@ import (
 // link = flag.String("link", "", "link to parsing")
 // originText = flag.String("originText", "", "origin text ")
 // )
+var parserDB *leveldb.DB
 
 func printHeaders(headers http.Header) {
 	log.Println("Starting print headers")
@@ -195,9 +201,14 @@ func processLink(link string) ([]byte, error) {
 	return []byte{}, errors.New("can't create json message")
 }
 
-func sendBadRequest(writer http.ResponseWriter, request *http.Request) {
+func sendBadResponse(writer http.ResponseWriter, request *http.Request) {
 	writer.WriteHeader(http.StatusBadRequest)
 	fmt.Fprintf(writer, "Bad url request: %s", request.URL)
+}
+
+func sendResponse(writer http.ResponseWriter, body []byte) (int, error) {
+	writer.Header().Set("Content-Length", strconv.Itoa(len(body)))
+	return writer.Write(body)
 }
 
 func linkParser(writer http.ResponseWriter, request *http.Request) {
@@ -208,24 +219,68 @@ func linkParser(writer http.ResponseWriter, request *http.Request) {
 	link := query.Get("url")
 
 	if len(link) == 0 {
-		sendBadRequest(writer, request)
+		sendBadResponse(writer, request)
 		return
 	}
 
-	validURL, err := validateURL(link, nil)
-	if err != nil {
-		log.Fatalln(err)
+	if parserDB == nil {
+		fmt.Println("\nlinkParser: DB is nil")
 	}
 
-	js, err := processLink(validURL)
+	if parserDB != nil {
+		cache, err := parserDB.Get([]byte(link), nil)
+		if err != leveldb.ErrNotFound {
+			log.Println(cache)
+			sendResponse(writer, cache)
+		} else {
+			log.Println(err)
 
+			validURL, err := validateURL(link, nil)
+			if err != nil {
+				log.Println(err)
+			}
+
+			js, err := processLink(validURL)
+
+			parserDB.Put([]byte(validURL), js, nil)
+
+			if err != nil {
+				log.Println(err)
+			} else {
+				fmt.Println(string(js))
+			}
+
+			sendResponse(writer, js)
+		}
+	}
+}
+
+func handleCtrlC(c chan os.Signal) {
+	sig := <-c
+
+	if parserDB != nil {
+		parserDB.Close()
+	}
+
+	fmt.Println("\nsignal: ", sig)
+	os.Exit(0)
+}
+
+// InitParserDB ...
+func InitParserDB() {
+	tempDir := os.TempDir()
+	fmt.Println(tempDir)
+	parserDBFile := filepath.Join(tempDir, "parser.db")
+	fmt.Println(parserDBFile)
+
+	var err error
+	parserDB, err = leveldb.OpenFile(parserDBFile, nil)
 	if err != nil {
 		log.Println(err)
-	} else {
-		fmt.Println(string(js))
 	}
 
-	writer.Header().Set("Content-Length", strconv.Itoa(len(js)))
-
-	writer.Write(js)
+	//defer parserDB.Close()
+	c := make(chan os.Signal)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go handleCtrlC(c)
 }

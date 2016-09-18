@@ -22,11 +22,11 @@
             "remotePath": "",
             "port": 2345,
             "host": "127.0.0.1",
-            "program": "${workspaceRoot}/image-optimizer",
+            "program": "${workspaceRoot}/remote-image-optimazer",
             "env": {},
-            "args": [],
+            "args": ["-cors", "-gzip", "-enable-url-source", "cpus 8"],
             "showLog": true,
-            "preLaunchTask": "build image-optimizer"
+            "preLaunchTask": "build remote-image-optimazer"
         }
     ]
 }

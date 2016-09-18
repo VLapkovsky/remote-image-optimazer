@@ -9,13 +9,13 @@
     "echoCommand": true,
     "tasks": [
         {
-            "taskName": "build image-optimizer",
+            "taskName": "build remote-image-optimazer",
             "isBuildCommand": true,
             "suppressTaskName": true,
             "args": ["go build"]
         },
         {
-            "taskName": "run image-optimizer",
+            "taskName": "run remote-image-optimazer",
             "suppressTaskName": true,
             "args": ["./image-optimizer"]
         }
