@@ -3,7 +3,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
+
+	"github.com/syndtr/goleveldb/leveldb"
 
 	"gopkg.in/h2non/filetype.v0"
 )
@@ -34,18 +37,38 @@ func imageController(o ServerOptions, operation Operation) func(http.ResponseWri
 			return
 		}
 
-		buf, err := imageSource.GetImage(req)
-		if err != nil {
-			ErrorReply(w, NewError(err.Error(), BadRequest))
-			return
+		if imageDB == nil {
+			fmt.Println("\nimageController: DB is nil")
 		}
 
-		if len(buf) == 0 {
-			ErrorReply(w, ErrEmptyBody)
-			return
-		}
+		if imageDB != nil {
+			url, err := parseURL(req)
+			if err != nil {
+				ErrorReply(w, NewError(err.Error(), BadRequest))
+				return
+			}
 
-		imageHandler(w, req, buf, operation)
+			cache, err := imageDB.Get([]byte(url.String()), nil)
+			if err != leveldb.ErrNotFound {
+				log.Println(cache)
+				w.Write(cache)
+			} else {
+				log.Println(err)
+
+				buf, err := imageSource.GetImage(req)
+				if err != nil {
+					ErrorReply(w, NewError(err.Error(), BadRequest))
+					return
+				}
+
+				if len(buf) == 0 {
+					ErrorReply(w, ErrEmptyBody)
+					return
+				}
+
+				imageHandler(w, req, buf, operation)
+			}
+		}
 	}
 }
 
@@ -78,6 +101,9 @@ func imageHandler(w http.ResponseWriter, r *http.Request, buf []byte, Operation 
 		ErrorReply(w, NewError("Error while processing the image: "+err.Error(), BadRequest))
 		return
 	}
+
+	url, _ := parseURL(r)
+	imageDB.Put([]byte(url.String()), image.Body, nil)
 
 	w.Header().Set("Content-Type", image.Mime)
 	w.Write(image.Body)

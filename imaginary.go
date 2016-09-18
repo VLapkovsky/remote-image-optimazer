@@ -136,7 +136,7 @@ func main() {
 
 	// Load image source providers
 	LoadSources(opts)
-	InitParserDB()
+	InitCachesDB()
 
 	// Start the server
 	err := Server(opts)

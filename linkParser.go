@@ -8,12 +8,8 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
-	"os"
-	"os/signal"
-	"path/filepath"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/mvdan/xurls"
@@ -26,7 +22,7 @@ import (
 // link = flag.String("link", "", "link to parsing")
 // originText = flag.String("originText", "", "origin text ")
 // )
-var parserDB *leveldb.DB
+// var parserDB *leveldb.DB
 
 func printHeaders(headers http.Header) {
 	log.Println("Starting print headers")
@@ -255,32 +251,32 @@ func linkParser(writer http.ResponseWriter, request *http.Request) {
 	}
 }
 
-func handleCtrlC(c chan os.Signal) {
-	sig := <-c
+// func handleCtrlC(c chan os.Signal) {
+// 	sig := <-c
 
-	if parserDB != nil {
-		parserDB.Close()
-	}
+// 	if parserDB != nil {
+// 		parserDB.Close()
+// 	}
 
-	fmt.Println("\nsignal: ", sig)
-	os.Exit(0)
-}
+// 	fmt.Println("\nsignal: ", sig)
+// 	os.Exit(0)
+// }
 
-// InitParserDB ...
-func InitParserDB() {
-	tempDir := os.TempDir()
-	fmt.Println(tempDir)
-	parserDBFile := filepath.Join(tempDir, "parser.db")
-	fmt.Println(parserDBFile)
+// // InitParserDB ...
+// func InitParserDB() {
+// 	tempDir := os.TempDir()
+// 	fmt.Println(tempDir)
+// 	parserDBFile := filepath.Join(tempDir, "parser.db")
+// 	fmt.Println(parserDBFile)
 
-	var err error
-	parserDB, err = leveldb.OpenFile(parserDBFile, nil)
-	if err != nil {
-		log.Println(err)
-	}
+// 	var err error
+// 	parserDB, err = leveldb.OpenFile(parserDBFile, nil)
+// 	if err != nil {
+// 		log.Println(err)
+// 	}
 
-	//defer parserDB.Close()
-	c := make(chan os.Signal)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-	go handleCtrlC(c)
-}
+// 	//defer parserDB.Close()
+// 	c := make(chan os.Signal)
+// 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+// 	go handleCtrlC(c)
+// }
